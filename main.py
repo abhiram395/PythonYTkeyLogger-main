@@ -34,7 +34,7 @@ def log_keystroke(key):
         (Key.alt_l in pressed_keys or Key.alt_r in pressed_keys) and
         (getattr(key, 'char', '').lower() == 'm')):
         stop_flag.set()
-        return False  # Stop the listener
+        return False 
 
     current_window = get_active_window()
     if current_window != last_window:
